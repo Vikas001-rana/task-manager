@@ -1,23 +1,11 @@
-import react from "@vitejs/plugin-react";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from 'vite'
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
-  const target = env.VITE_SUPABASE_URL;
-
-  return {
-    plugins: [react()],
-    server: {
-      proxy: target
-        ? {
-            "/supabase": {
-              target,
-              changeOrigin: true,
-              secure: true,
-              rewrite: (path) => path.replace(/^\/supabase/, ""),
-            },
-          }
-        : undefined,
-    },
-  };
-});
+export default defineConfig({
+  server: {
+    host: '0.0.0.0'
+  },
+  preview: {
+    host: '0.0.0.0',
+    allowedHosts: ['task-manager-production-1d86.up.railway.app']
+  }
+})
