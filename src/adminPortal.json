@@ -1,0 +1,16 @@
+{
+  "type": "admin",
+  "name": "Admin",
+  "role": "Team Manager",
+  "authTitle": "Admin Sign In",
+  "authSubtitle": "Manager access only.",
+  "credentials": {
+    "email": "admin@taskflow.com",
+    "password": "admin123"
+  },
+  "nav": [
+    { "id": "overview", "label": "Overview" },
+    { "id": "projects", "label": "Projects" },
+    { "id": "clients", "label": "Team Members" }
+  ]
+}

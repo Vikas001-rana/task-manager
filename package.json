@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "dev": "vite",
+    "admin": "vite --host 127.0.0.1 --port 5173 --mode admin",
+    "member": "vite --host 127.0.0.1 --port 5174 --mode member",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "@supabase/supabase-js": "latest"
+  },
+  "devDependencies": {}
+}
