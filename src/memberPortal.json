@@ -1,0 +1,14 @@
+{
+  "type": "member",
+  "role": "Member",
+  "loginTitle": "Member Sign In",
+  "signupTitle": "Create Member Account",
+  "loginSubtitle": "Sign in to see your assigned project work.",
+  "signupSubtitle": "Create your member account with your skill details.",
+  "nav": [
+    { "id": "all", "label": "My Projects" },
+    { "id": "In Progress", "label": "In Progress" },
+    { "id": "To Do", "label": "To Do" },
+    { "id": "Done", "label": "Completed" }
+  ]
+}
