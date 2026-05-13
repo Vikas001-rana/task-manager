@@ -2,8 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const useProxy = import.meta.env.VITE_USE_SUPABASE_PROXY === "true";
 const clientUrl =
-  import.meta.env.DEV && url?.includes("supabase.co")
+
+  import.meta.env.DEV && useProxy && url?.includes("supabase.co")
     ? `${window.location.origin}/supabase`
     : url;
 

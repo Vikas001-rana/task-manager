@@ -4,7 +4,7 @@ import adminPortal from "./adminPortal.json";
 import memberPortal from "./memberPortal.json";
 
 const uid = () => crypto.randomUUID?.() || Math.random().toString(36).slice(2, 10);
-const MEMBERS = [];
+const MEMBERS = ["Arjun D.", "Kavya R.", "Dev B.", "Preet K.", "Nisha T.", "Rohit S.", "Anjali M.", "Suresh P."];
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || adminPortal.credentials.email;
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || adminPortal.credentials.password;
 const ADMIN = { type: "admin", skill: adminPortal.role, name: adminPortal.name, email: ADMIN_EMAIL, avatar: "AD" };
@@ -563,10 +563,19 @@ function AdminProjects({ projects, clients, complaints, onReply, onMessage, onSa
   const [newTask, setNewTask] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [projectSearch, setProjectSearch] = useState("");
   const memberOptions = [
     ...clients.map((c) => ({ value: c.name, label: `${c.name} (${c.skill || c.role || "Team Member"})`, type: "member" })),
     ...MEMBERS.map((m) => ({ value: m, label: m, type: "staff" })),
   ];
+  const visibleProjects = projectSearch.trim()
+    ? projects.filter((p) => {
+        const query = projectSearch.trim().toLowerCase();
+        const members = displayMembers(p, clients).join(" ");
+        const taskText = (p.tasks || []).map((task) => `${task.title} ${task.assignedMember || ""} ${task.status || ""}`).join(" ");
+        return [p.title, p.description, p.priority, p.status, p.deadline, members, taskText].filter(Boolean).join(" ").toLowerCase().includes(query);
+      })
+    : projects;
 
   const openCreate = () => {
     setForm({ title: "", description: "", clientId: "", priority: "Medium", deadline: "", status: "To Do", members: [], tasks: [] });
@@ -589,7 +598,8 @@ function AdminProjects({ projects, clients, complaints, onReply, onMessage, onSa
     if (!form.deadline) return setErr("Deadline is required.");
     setBusy(true);
     try {
-      await onSave({ ...form, clientId: selectedClient.id, members: [...new Set(form.members || [])], status: modal === "create" ? "To Do" : form.status }, modal === "create");
+      const projectToSave = { ...form, clientId: selectedClient.id, members: [...new Set(form.members || [])], status: modal === "create" ? "To Do" : form.status };
+      await onSave(projectToSave, modal === "create");
       setModal(null);
     } catch (error) {
       setErr(friendlyError(error) || "Could not save project.");
@@ -613,8 +623,19 @@ function AdminProjects({ projects, clients, complaints, onReply, onMessage, onSa
     <>
       <div className="sec-head"><h2 className="sec-title">Projects</h2><button className="btn btn-admin btn-sm" onClick={openCreate}>+ Assign New Project</button></div>
       {clients.length === 0 && <div className="notice">Create at least one team member account before assigning projects.</div>}
+      <div className="card mb16">
+        <div className="form-group">
+          <label className="label">Search Projects</label>
+          <div className="row gap8">
+            <input className="inp" value={projectSearch} onChange={(e) => setProjectSearch(e.target.value)} placeholder="Search by project, member, task, status, priority, or deadline" />
+            <button className="btn btn-admin btn-sm" onClick={() => setProjectSearch((value) => value.trim())}>Search</button>
+            {projectSearch && <button className="btn btn-ghost btn-sm" onClick={() => setProjectSearch("")}>Clear</button>}
+          </div>
+        </div>
+      </div>
+      {projects.length > 0 && visibleProjects.length === 0 && <div className="card empty">No projects match your search.</div>}
       <div className="grid3">
-        {projects.map((p) => {
+        {visibleProjects.map((p) => {
           const pct = taskProgress(p.tasks);
           const members = displayMembers(p, clients);
           return (
@@ -777,6 +798,15 @@ function ChatThread({ complaint, inputValue, onInput, onSend, buttonClass }) {
 
 function AdminClients({ clients, projects }) {
   const [selected, setSelected] = useState(null);
+  const [memberSearch, setMemberSearch] = useState("");
+  const visibleClients = memberSearch.trim()
+    ? clients.filter((c) => {
+        const query = memberSearch.trim().toLowerCase();
+        const cProjects = memberProjects(projects, c);
+        const projectText = cProjects.map((p) => p.title).join(" ");
+        return [c.name, c.email, c.skill, c.role, projectText].filter(Boolean).join(" ").toLowerCase().includes(query);
+      })
+    : clients;
   const selectedProjects = selected ? memberProjects(projects, selected) : [];
   const selectedTasks = selectedProjects.flatMap((p) => p.tasks || []);
   const selectedProjectCounts = projectStatusCounts(selectedProjects);
@@ -784,8 +814,19 @@ function AdminClients({ clients, projects }) {
   return (
     <>
       <div className="sec-head"><h2 className="sec-title">Team Members</h2><span className="badge client">{clients.length} accounts</span></div>
+      <div className="card mb16">
+        <div className="form-group">
+          <label className="label">Search Members</label>
+          <div className="row gap8">
+            <input className="inp" value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Search by name, email, skill, or assigned project" />
+            <button className="btn btn-client btn-sm" onClick={() => setMemberSearch((value) => value.trim())}>Search</button>
+            {memberSearch && <button className="btn btn-ghost btn-sm" onClick={() => setMemberSearch("")}>Clear</button>}
+          </div>
+        </div>
+      </div>
+      {clients.length > 0 && visibleClients.length === 0 && <div className="card empty">No members match your search.</div>}
       <div className="grid3">
-        {clients.map((c) => {
+        {visibleClients.map((c) => {
           const cProjects = memberProjects(projects, c);
           const tasks = cProjects.flatMap((p) => p.tasks || []);
           return (
@@ -840,6 +881,7 @@ function ClientView({ user, projects, complaints, projectFilter, onNavigate, onC
   const [newProject, setNewProject] = useState(null);
   const [dateFilter, setDateFilter] = useState("all");
   const [sortMode, setSortMode] = useState("nearest");
+  const [todoSearch, setTodoSearch] = useState("");
   const myProjects = memberProjects(projects, user);
   const tasks = myProjects.flatMap((p) => (p.tasks || []).filter((t) => t.assignedMember === user.name));
   const overdue = myProjects.filter((p) => daysUntil(p.deadline) < 0 && p.status !== "Done").length;
@@ -856,7 +898,14 @@ function ClientView({ user, projects, complaints, projectFilter, onNavigate, onC
         return true;
       })
     : statusProjects;
-  const filteredProjects = [...dateFilteredProjects].sort((a, b) => {
+  const searchedProjects = projectFilter === "To Do" && todoSearch.trim()
+    ? dateFilteredProjects.filter((p) => {
+        const query = todoSearch.trim().toLowerCase();
+        const taskText = (p.tasks || []).map((task) => task.title).join(" ");
+        return [p.title, p.description, p.priority, p.deadline, taskText].filter(Boolean).join(" ").toLowerCase().includes(query);
+      })
+    : dateFilteredProjects;
+  const filteredProjects = [...searchedProjects].sort((a, b) => {
     if (sortMode === "latest") return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     if (sortMode === "oldest") return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
     return new Date(`${a.deadline}T00:00`) - new Date(`${b.deadline}T00:00`);
@@ -937,6 +986,23 @@ function ClientView({ user, projects, complaints, projectFilter, onNavigate, onC
                 <option value="latest">Latest assigned first</option>
                 <option value="oldest">Oldest assigned first</option>
               </select>
+            </div>
+          </div>
+        </div>
+      )}
+      {projectFilter === "To Do" && myProjects.length > 0 && (
+        <div className="card mb16">
+          <div className="form-group">
+            <label className="label">Search To Do Projects</label>
+            <div className="row gap8">
+              <input
+                className="inp"
+                value={todoSearch}
+                onChange={(e) => setTodoSearch(e.target.value)}
+                placeholder="Search by project, task, priority, or deadline"
+              />
+              <button className="btn btn-client btn-sm" onClick={() => setTodoSearch((value) => value.trim())}>Search</button>
+              {todoSearch && <button className="btn btn-ghost btn-sm" onClick={() => setTodoSearch("")}>Clear</button>}
             </div>
           </div>
         </div>
@@ -1095,7 +1161,7 @@ function Info({ label, value, sub }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [adminView, setAdminView] = useState("overview");
-  const [memberView, setMemberView] = useState("all");
+  const [memberView, setMemberView] = useState(() => new URLSearchParams(window.location.search).get("view") === "todo" ? "To Do" : "all");
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
   const [complaints, setComplaints] = useState([]);
@@ -1113,6 +1179,49 @@ export default function App() {
 
   useEffect(() => {
     refresh().catch((error) => setErr(friendlyError(error) || "Could not load data.")).finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!hasSupabase) return undefined;
+
+    let active = true;
+    let timer = null;
+    const syncLiveData = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        loadData()
+          .then((data) => {
+            if (!active) return;
+            setClients(data.clients);
+            setProjects(data.projects);
+            setComplaints(data.complaints);
+          })
+          .catch((error) => {
+            if (active) setErr(friendlyError(error) || "Could not sync live data.");
+          });
+      }, 150);
+    };
+
+    const channel = supabase
+      .channel("taskflow-live-data")
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, syncLiveData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "clients" }, syncLiveData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "complaints" }, syncLiveData)
+      .subscribe();
+    const polling = window.setInterval(syncLiveData, 15000);
+    const onFocus = () => syncLiveData();
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+      window.clearInterval(polling);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const signup = async (form) => {
