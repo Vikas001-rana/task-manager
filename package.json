@@ -12,7 +12,6 @@
     "@vitejs/plugin-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "serve": "^14.2.6",
     "vite": "latest"
   }
 }
