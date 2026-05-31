@@ -5,13 +5,14 @@
     "member": "vite --host 0.0.0.0 --port 5174 --mode member",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "vite preview --host 0.0.0.0 --port 4173"
+    "start": "vite preview --host 0.0.0.0 --port $PORT"
   },
   "dependencies": {
     "@supabase/supabase-js": "latest",
     "@vitejs/plugin-react": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "serve": "^14.2.6",
     "vite": "latest"
   }
 }
